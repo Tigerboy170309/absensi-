@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Absensi Foto dengan Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #222;
+      color: #fff;
+    }
+    form {
+      background: #333;
+      padding: 20px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      padding: 10px;
+      margin: 10px;
+      width: 250px;
+      border-radius: 5px;
+    }
+    button {
+      background: lime;
+      border: none;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #fff;
+      text-align: center;
+    }
+    th {
+      background: lime;
+      color: black;
+    }
+    #adminPanel {
+      display: none;
+    }
+    video, canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<h1>Absensi Foto dengan Login 🔑</h1>
+
+<div id="loginPanel">
+  <h3>Login Admin</h3>
+  <input type="password" id="password" placeholder="Masukkan Password">
+  <button onclick="loginAdmin()">Login</button>
+</div>
+
+<div id="adminPanel">
+  <div id="jam"></div>
+  <form id="absenForm">
+    <input type="text" id="nama" placeholder="Masukkan Nama" required>
+    <select id="kehadiran">
+      <option value="Hadir">Hadir</option>
+      <option value="Izin">Izin</option>
+      <option value="Alpha">Alpha</option>
+    </select>
+    <button type="button" onclick="ambilFoto()">Ambil Foto</button>
+    <button type="button" onclick="tambahAbsen()">Absen</button>
+    <button type="button" onclick="resetAbsen()">Reset</button>
+    <button type="button" onclick="downloadExcel()">Download Excel</button>
+    <button type="button" onclick="logoutAdmin()">Logout</button>
+  </form>
+
+  <video id="kamera" width="300" autoplay></video>
+  <canvas id="fotoCanvas" width="300"></canvas>
+
+  <table>
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Nama</th>
+        <th>Tanggal</th>
+        <th>Jam</th>
+        <th>Kehadiran</th>
+        <th>Foto</th>
+      </tr>
+    </thead>
+    <tbody id="absenList">
+    </tbody>
+  </table>
+</div>
+
+<script>
+  let no = 1;
+  const passwordAdmin = "admin123"; // Ganti password di sini
+  let kamera = document.getElementById("kamera");
+  let canvas = document.getElementById("fotoCanvas");
+  let context = canvas.getContext("2d");
+  let fotoBase64 = "";
+
+  function showTime() {
+    let now = new Date();
+    document.getElementById("jam").innerText = "Jam: " + now.toLocaleTimeString("id-ID");
+  }
+  setInterval(showTime, 1000);
+
+  function ambilFoto() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        kamera.style.display = "block";
+        kamera.srcObject = stream;
+      });
+  }
+
+  function tambahAbsen() {
+    let nama = document.getElementById("nama").value;
+    let kehadiran = document.getElementById("kehadiran").value;
+    let tanggal = new Date().toLocaleDateString("id-ID");
+    let jam = new Date().toLocaleTimeString("id-ID");
+
+    if (nama === "") {
+      alert("Nama tidak boleh kosong!");
+      return;
+    }
+
+    context.drawImage(kamera, 0, 0, 300, 300);
+    fotoBase64 = canvas.toDataURL("image/png");
+
+    let tabel = document.getElementById("absenList");
+    let baris = `
+      <tr>
+        <td>${no}</td>
+        <td>${nama}</td>
+        <td>${tanggal}</td>
+        <td>${jam}</td>
+        <td>${kehadiran}</td>
+        <td><img src="${fotoBase64}" width="100"></td>
+      </tr>
+    `;
+    tabel.innerHTML += baris;
+    no++;
+    document.getElementById("absenForm").reset();
+  }
+
+  function resetAbsen() {
+    document.getElementById("absenList").innerHTML = "";
+    no = 1;
+  }
+
+  function downloadExcel() {
+    let table = document.querySelector("table");
+    let rows = table.rows;
+    let csv = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      let row = [], cols = rows[i].cells;
+      for (let j = 0; j < cols.length; j++) {
+        row.push(cols[j].innerText);
+      }
+      csv.push(row.join(","));
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+    let link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = "Absensi.csv";
+    link.click();
+  }
+
+  function loginAdmin() {
+    let password = document.getElementById("password").value;
+    if (password === passwordAdmin) {
+      alert("Login Berhasil!");
+      document.getElementById("loginPanel").style.display = "none";
+      document.getElementById("adminPanel").style.display = "block";
+    } else {
+      alert("Password Salah!");
+    }
+  }
+
+  function logoutAdmin() {
+    document.getElementById("loginPanel").style.display = "block";
+    document.getElementById("adminPanel").style.display = "none";
+    document.getElementById("password").value = "";
+  }
+</script>
+</body>
+</html>
